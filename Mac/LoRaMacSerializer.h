@@ -36,9 +36,12 @@
  */
 #ifndef __LORAMAC_SERIALIZER_H__
 #define __LORAMAC_SERIALIZER_H__
-#include <stdint.h>
-#include "LoRaMacMessageTypes.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+#include "LoRaMacMessageTypes.h"
 
 /*!
  * LoRaMac Serializer Status
@@ -66,7 +69,7 @@ typedef enum eLoRaMacSerializerStatus
 /*!
  * Creates serialized MAC message of structured object.
  *
- * \param[IN/OUT] macMsg        - Join-request message object
+ * \param [in,out] macMsg       - Join-request message object
  * \retval                      - Status of the operation
  */
 LoRaMacSerializerStatus_t LoRaMacSerializerJoinRequest( LoRaMacMessageJoinRequest_t* macMsg );
@@ -74,7 +77,7 @@ LoRaMacSerializerStatus_t LoRaMacSerializerJoinRequest( LoRaMacMessageJoinReques
 /*!
  * Creates serialized MAC message of structured object.
  *
- * \param[IN/OUT] macMsg        - Join-request message object
+ * \param [in,out] macMsg       - Join-request message object
  * \retval                      - Status of the operation
  */
 LoRaMacSerializerStatus_t LoRaMacSerializerReJoinType1( LoRaMacMessageReJoinType1_t* macMsg );
@@ -82,7 +85,7 @@ LoRaMacSerializerStatus_t LoRaMacSerializerReJoinType1( LoRaMacMessageReJoinType
 /*!
  * Creates serialized MAC message of structured object.
  *
- * \param[IN/OUT] macMsg        - Join-request message object
+ * \param [in,out] macMsg       - Join-request message object
  * \retval                      - Status of the operation
  */
 LoRaMacSerializerStatus_t LoRaMacSerializerReJoinType0or2( LoRaMacMessageReJoinType0or2_t* macMsg );
@@ -90,12 +93,16 @@ LoRaMacSerializerStatus_t LoRaMacSerializerReJoinType0or2( LoRaMacMessageReJoinT
 /*!
  * Creates serialized MAC message of structured object.
  *
- * \param[IN/OUT] macMsg        - Data message object
+ * \param [in,out] macMsg       - Data message object
  * \retval                      - Status of the operation
  */
 LoRaMacSerializerStatus_t LoRaMacSerializerData( LoRaMacMessageData_t* macMsg );
 
 /*! \} addtogroup LORAMAC */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __LORAMAC_SERIALIZER_H__
 

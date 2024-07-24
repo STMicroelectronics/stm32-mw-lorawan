@@ -28,13 +28,18 @@
  *
  * \author    Daniel Jaeckle ( STACKFORCE )
  *
- * \defgroup  LORAMACCLASSB LoRa MAC Class B configuration
+ * \defgroup  LORAMACCLASSBCONFIG LoRa MAC Class B configuration
  *            This header file contains parameters to configure the class b operation.
  *            By default, all parameters are set according to the specification.
  * \{
  */
 #ifndef __LORAMACCLASSBCONFIG_H__
 #define __LORAMACCLASSBCONFIG_H__
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 /*!
  * Defines the beacon interval in ms
@@ -57,7 +62,7 @@
 #define CLASSB_BEACON_WINDOW                        122880
 
 /*!
- * Beacon window time in numer of slots
+ * Beacon window time in number of slots
  */
 #define CLASSB_BEACON_WINDOW_SLOTS                  4096
 
@@ -111,5 +116,11 @@
  * Defines the expansion factor for the beacon movement
  */
 #define CLASSB_WINDOW_MOVE_EXPANSION_FACTOR         2
+
+/*! \} defgroup LORAMACCLASSBCONFIG */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __LORAMACCLASSBCONFIG_H__

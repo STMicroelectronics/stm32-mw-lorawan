@@ -39,10 +39,12 @@
 #ifndef __LORAMAC_CONFIRMQUEUE_H__
 #define __LORAMAC_CONFIRMQUEUE_H__
 
-#include <stdbool.h>
-#include <stdint.h>
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-#include "LoRaMac.h"
+#include "LoRaMacInterfaces.h"
 
 /*!
  * LoRaMac MLME-Confirm queue length
@@ -74,43 +76,16 @@ typedef struct sMlmeConfirmQueue
 }MlmeConfirmQueue_t;
 
 /*!
- * Signature of callback function to be called by this module when the
- * non-volatile needs to be saved.
- */
-typedef void ( *LoRaMacConfirmQueueNvmEvent )( void );
-
-/*!
  * \brief   Initializes the confirm queue
  *
- * \param   [IN] primitives - Pointer to the LoRaMac primitives.
- *
- * \param   [IN] confirmQueueNvmCtxChanged - Callback function which will be called when the
- *                                           non-volatile context needs to be saved.
+ * \param   [in] primitive - Pointer to the LoRaMac primitives.
  */
-void LoRaMacConfirmQueueInit( LoRaMacPrimitives_t* primitives, LoRaMacConfirmQueueNvmEvent confirmQueueNvmCtxChanged  );
-
-/*!
- * Restores the internal non-volatile context from passed pointer.
- *
- * \param   [IN] confirmQueueNvmCtx - Pointer to non-volatile class B module context to be restored.
- *
- * \retval  [true - operation was successful, false - operation failed]
- */
-bool LoRaMacConfirmQueueRestoreNvmCtx( void* confirmQueueNvmCtx );
-
-/*!
- * Returns a pointer to the internal non-volatile context.
- *
- * \param   [IN] confirmQueueNvmCtxSize - Size of the module non-volatile context
- *
- * \retval  - Points to a structure where the module store its non-volatile context
- */
-void* LoRaMacConfirmQueueGetNvmCtx( size_t* confirmQueueNvmCtxSize );
+void LoRaMacConfirmQueueInit( LoRaMacPrimitives_t* primitive );
 
 /*!
  * \brief   Adds an element to the confirm queue.
  *
- * \param   [IN] mlmeConfirm - Pointer to the element to add.
+ * \param   [in] mlmeConfirm - Pointer to the element to add.
  *
  * \retval  [true - operation was successful, false - operation failed]
  */
@@ -133,16 +108,16 @@ bool LoRaMacConfirmQueueRemoveFirst( void );
 /*!
  * \brief   Sets the status of an element.
  *
- * \param   [IN] status - The status to set.
+ * \param   [in] status - The status to set.
  *
- * \param   [IN] request - The related request to set the status.
+ * \param   [in] request - The related request to set the status.
  */
 void LoRaMacConfirmQueueSetStatus( LoRaMacEventInfoStatus_t status, Mlme_t request );
 
 /*!
  * \brief   Gets the status of an element.
  *
- * \param   [IN] request - The request to query the status.
+ * \param   [in] request - The request to query the status.
  *
  * \retval  The status of the related MlmeRequest.
  */
@@ -151,7 +126,7 @@ LoRaMacEventInfoStatus_t LoRaMacConfirmQueueGetStatus( Mlme_t request );
 /*!
  * \brief   Sets a common status for all elements in the queue.
  *
- * \param   [IN] status - The status to set.
+ * \param   [in] status - The status to set.
  */
 void LoRaMacConfirmQueueSetStatusCmn( LoRaMacEventInfoStatus_t status );
 
@@ -165,7 +140,7 @@ LoRaMacEventInfoStatus_t LoRaMacConfirmQueueGetStatusCmn( void );
 /*!
  * \brief   Verifies if a request is in the queue and active.
  *
- * \param   [IN] request - The request to verify.
+ * \param   [in] request - The request to verify.
  *
  * \retval  [true - element is in the queue, false - element is not in the queue].
  */
@@ -174,7 +149,7 @@ bool LoRaMacConfirmQueueIsCmdActive( Mlme_t request );
 /*!
  * \brief   Handles all callbacks of active requests
  *
- * \param   [IN] mlmeConfirm - Pointer to the generic mlmeConfirm structure.
+ * \param   [in] mlmeConfirm - Pointer to the generic mlmeConfirm structure.
  */
 void LoRaMacConfirmQueueHandleCb( MlmeConfirm_t* mlmeConfirm );
 
@@ -191,5 +166,11 @@ uint8_t LoRaMacConfirmQueueGetCnt( void );
  * \retval  [true - queue is full, false - queue is not full].
  */
 bool LoRaMacConfirmQueueIsFull( void );
+
+/*! \} defgroup LORAMACCONFIRMQUEUE */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __LORAMAC_CONFIRMQUEUE_H__

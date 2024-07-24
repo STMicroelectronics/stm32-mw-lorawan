@@ -1,17 +1,25 @@
-/*
- / _____)             _              | |
-( (____  _____ ____ _| |_ _____  ____| |__
- \____ \| ___ |    (_   _) ___ |/ ___)  _ \
- _____) ) ____| | | || |_| ____( (___| | | |
-(______/|_____)_|_|_| \__)_____)\____)_| |_|
-    (C)2013 Semtech
-
-Description: Helper functions implementation
-
-License: Revised BSD License, see LICENSE.TXT file include in the project
-
-Maintainer: Miguel Luis and Gregory Cristian
-*/
+/*!
+ * \file      utilities.c
+ *
+ * \brief     Helper functions implementation
+ *
+ * \copyright Revised BSD License, see section \ref LICENSE.
+ *
+ * \code
+ *                ______                              _
+ *               / _____)             _              | |
+ *              ( (____  _____ ____ _| |_ _____  ____| |__
+ *               \____ \| ___ |    (_   _) ___ |/ ___)  _ \
+ *               _____) ) ____| | | || |_| ____( (___| | | |
+ *              (______/|_____)_|_|_| \__)_____)\____)_| |_|
+ *              (C)2013-2017 Semtech
+ *
+ * \endcode
+ *
+ * \author    Miguel Luis ( Semtech )
+ *
+ * \author    Gregory Cristian ( Semtech )
+ */
 /**
   ******************************************************************************
   *
@@ -21,7 +29,7 @@ Maintainer: Miguel Luis and Gregory Cristian
   * @author  MCD Application Team
   * @brief   Helper functions implementation
   ******************************************************************************
- */
+  */
 
 #include "utilities.h"
 
@@ -33,9 +41,14 @@ Maintainer: Miguel Luis and Gregory Cristian
 // Standard random functions redefinition start
 #define RAND_LOCAL_MAX 2147483647L
 
+// CRC32 reversed polynomial 0xEDB88320
+static const uint32_t reversedPolynom = 0xEDB88320;
+
 static uint32_t next = 1;
 
-int32_t rand1( void )
+static int32_t rand1( void );
+
+static int32_t rand1( void )
 {
     return ( ( next = next * 1103515245L + 12345L ) % RAND_LOCAL_MAX );
 }
@@ -91,4 +104,56 @@ int8_t Nibble2HexChar( uint8_t a )
         return '?';
     }
 }
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+
+uint32_t Crc32( uint8_t *buffer, uint16_t length )
+{
+    // CRC initial value
+    uint32_t crc = 0xFFFFFFFF;
+
+    if( buffer == NULL )
+    {
+        return 0;
+    }
+
+    for( uint16_t i = 0; i < length; ++i )
+    {
+        crc ^= ( uint32_t )buffer[i];
+        for( uint16_t i = 0; i < 8; i++ )
+        {
+            crc = ( crc >> 1 ) ^ ( reversedPolynom & ~( ( crc & 0x01 ) - 1 ) );
+        }
+    }
+
+    return ~crc;
+}
+
+uint32_t Crc32Init( void )
+{
+    return 0xFFFFFFFF;
+}
+
+uint32_t Crc32Update( uint32_t crcInit, uint8_t *buffer, uint16_t length )
+{
+    // CRC initial value
+    uint32_t crc = crcInit;
+
+    if( buffer == NULL )
+    {
+        return 0;
+    }
+
+    for( uint16_t i = 0; i < length; ++i )
+    {
+        crc ^= ( uint32_t )buffer[i];
+        for( uint16_t i = 0; i < 8; i++ )
+        {
+            crc = ( crc >> 1 ) ^ ( reversedPolynom & ~( ( crc & 0x01 ) - 1 ) );
+        }
+    }
+    return crc;
+}
+
+uint32_t Crc32Finalize( uint32_t crc )
+{
+    return ~crc;
+}

@@ -35,10 +35,12 @@
 #ifndef __LORAMAC_COMMANDS_H__
 #define __LORAMAC_COMMANDS_H__
 
-#include <stdint.h>
-#include <stddef.h>
-#include "LoRaMacTypes.h"
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
+#include "LoRaMacTypes.h"
 
 /*
  * Number of MAC Command slots
@@ -72,6 +74,10 @@ struct sMacCommand
      * Indicates if it's a sticky MAC command
      */
     bool IsSticky;
+    /*!
+     * The command requires an explicit confirmation
+     */
+    bool IsConfirmationRequired;
 };
 
 /*!
@@ -114,37 +120,16 @@ typedef void ( *LoRaMacCommandsNvmEvent )( void );
 /*!
  * \brief Initialization of LoRaMac MAC commands module
  *
- * \param[IN]    commandsNvmCtxChanged - Callback function which will be called when the
- *                                      non-volatile context needs to be saved.
- *
- * \retval                            - Status of the operation
- */
-LoRaMacCommandStatus_t LoRaMacCommandsInit( LoRaMacCommandsNvmEvent commandsNvmCtxChanged );
-
-/*!
- * Restores the internal non-volatile context from passed pointer.
- *
- * \param[IN]     commandsNvmCtx     - Pointer to non-volatile MAC commands module context to be restored.
- *
  * \retval                     - Status of the operation
  */
-LoRaMacCommandStatus_t LoRaMacCommandsRestoreNvmCtx( void* commandsNvmCtx );
-
-/*!
- * Returns a pointer to the internal non-volatile context.
- *
- * \param[IN]     commandsNvmCtxSize - Size of the module non-volatile context
- *
- * \retval                    - Points to a structure where the module store its non-volatile context
- */
-void* LoRaMacCommandsGetNvmCtx( size_t* commandsNvmCtxSize );
+LoRaMacCommandStatus_t LoRaMacCommandsInit( void );
 
 /*!
  * \brief Adds a new MAC command to be sent.
  *
- * \param[IN]   cid                - MAC command identifier
- * \param[IN]   payload            - MAC command payload containing parameters
- * \param[IN]   payloadSize        - Size of MAC command payload
+ * \param [in]  cid            - MAC command identifier
+ * \param [in]  payload        - MAC command payload containing parameters
+ * \param [in]  payloadSize    - Size of MAC command payload
  *
  * \retval                     - Status of the operation
  */
@@ -153,7 +138,7 @@ LoRaMacCommandStatus_t LoRaMacCommandsAddCmd( uint8_t cid, uint8_t* payload, siz
 /*!
  * \brief Remove a MAC command.
  *
- * \param[OUT]  cmd                - MAC command
+ * \param [out] macCmd         - MAC command
  *
  * \retval                     - Status of the operation
  */
@@ -162,8 +147,8 @@ LoRaMacCommandStatus_t LoRaMacCommandsRemoveCmd( MacCommand_t* macCmd );
 /*!
  * \brief Get the MAC command with corresponding CID.
  *
- * \param[IN]   cid                - MAC command identifier
- * \param[OUT]  cmd                - MAC command
+ * \param [in]  cid            - MAC command identifier
+ * \param [out] macCmd         - MAC command
  *
  * \retval                     - Status of the operation
  */
@@ -186,7 +171,7 @@ LoRaMacCommandStatus_t LoRaMacCommandsRemoveStickyAnsCmds( void );
 /*!
  * \brief Get size of all MAC commands serialized as buffer
  *
- * \param[out]   size               - Available size of memory for MAC commands
+ * \param [out] size           - Available size of memory for MAC commands
  *
  * \retval                     - Status of the operation
  */
@@ -195,24 +180,28 @@ LoRaMacCommandStatus_t LoRaMacCommandsGetSizeSerializedCmds( size_t* size );
 /*!
  * \brief Get as many as possible MAC commands serialized
  *
- * \param[IN]   availableSize      - Available size of memory for MAC commands
- * \param[out]  effectiveSize      - Size of memory which was effectively used for serializing.
- * \param[out]  buffer             - Destination data buffer
+ * \param [in]  availableSize  - Available size of memory for MAC commands
+ * \param [out] effectiveSize  - Size of memory which was effectively used for serializing.
+ * \param [out] buffer         - Destination data buffer
  *
  * \retval                     - Status of the operation
  */
 LoRaMacCommandStatus_t LoRaMacCommandsSerializeCmds( size_t availableSize, size_t* effectiveSize,  uint8_t* buffer );
 
 /*!
- * \brief Determines if there are sticky MAC commands pending.
+ * \brief Get the MAC command size with corresponding CID.
  *
- * \param[IN]   cmdsPending        - Indicates if there are sticky MAC commands in the queue.
+ * \param [in]  cid            - MAC command identifier
  *
- * \retval                     - Status of the operation
+ * \retval Size of the command.
  */
-LoRaMacCommandStatus_t LoRaMacCommandsStickyCmdsPending( bool* cmdsPending );
+uint8_t LoRaMacCommandsGetCmdSize( uint8_t cid );
 
 /*! \} addtogroup LORAMAC */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __LORAMAC_COMMANDS_H__
 
