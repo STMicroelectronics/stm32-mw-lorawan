@@ -54,7 +54,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "utilities.h"
 #include "LoRaMac.h"
 #include "timer.h"
 
@@ -476,7 +475,7 @@
  * EU868        | -
  * IN865        | Max EIRP - 18
  * KR920        | -
- * US915        | Max ERP - 16
+ * US915        | Max ERP - 18
  * RU864        | -
  */
 #define TX_POWER_9                                  9
@@ -492,28 +491,72 @@
  * EU868        | -
  * IN865        | Max EIRP - 20
  * KR920        | -
- * US915        | Max ERP - 10
+ * US915        | Max ERP - 20
  * RU864        | -
  */
 #define TX_POWER_10                                 10
 
 /*!
- * RFU
+ * Region       | dBM
+ * ------------ | :-----:
+ * AS923        | -
+ * AU915        | Max EIRP - 22
+ * CN470        | -
+ * CN779        | -
+ * EU433        | -
+ * EU868        | -
+ * IN865        | -
+ * KR920        | -
+ * US915        | Max ERP - 22
+ * RU864        | -
  */
 #define TX_POWER_11                                 11
 
 /*!
- * RFU
+ * Region       | dBM
+ * ------------ | :-----:
+ * AS923        | -
+ * AU915        | Max EIRP - 24
+ * CN470        | -
+ * CN779        | -
+ * EU433        | -
+ * EU868        | -
+ * IN865        | -
+ * KR920        | -
+ * US915        | Max ERP - 24
+ * RU864        | -
  */
 #define TX_POWER_12                                 12
 
 /*!
- * RFU
+ * Region       | dBM
+ * ------------ | :-----:
+ * AS923        | -
+ * AU915        | Max EIRP - 26
+ * CN470        | -
+ * CN779        | -
+ * EU433        | -
+ * EU868        | -
+ * IN865        | -
+ * KR920        | -
+ * US915        | Max ERP - 26
+ * RU864        | -
  */
 #define TX_POWER_13                                 13
 
 /*!
- * RFU
+ * Region       | dBM
+ * ------------ | :-----:
+ * AS923        | -
+ * AU915        | Max EIRP - 28
+ * CN470        | -
+ * CN779        | -
+ * EU433        | -
+ * EU868        | -
+ * IN865        | -
+ * KR920        | -
+ * US915        | Max ERP - 28
+ * RU864        | -
  */
 #define TX_POWER_14                                 14
 
@@ -529,6 +572,11 @@
  */
 typedef enum ePhyAttribute
 {
+    /*!
+     * Frequency. It is available
+     * to perform a verification with RegionVerify().
+     */
+    PHY_FREQUENCY,
     /*!
      * Minimum RX datarate.
      */
@@ -764,11 +812,6 @@ typedef enum eInitType
      */
     INIT_TYPE_RESTORE_DEFAULT_CHANNELS,
     /*!
-     * Initializes the region specific data to the defaults which were set by
-     * the application.
-     */
-    INIT_TYPE_APP_DEFAULTS,
-    /*!
      * Restores internal context from passed pointer.
      */
     INIT_TYPE_RESTORE_CTX
@@ -914,6 +957,10 @@ typedef struct sGetNvmCtxParams
  */
 typedef union uVerifyParams
 {
+    /*!
+     * Channel frequency to verify
+     */
+    uint32_t Frequency;
     /*!
      * TX power to verify.
      */
@@ -1160,6 +1207,21 @@ typedef struct sDlChannelReqParams
      */
     uint32_t Rx1Frequency;
 }DlChannelReqParams_t;
+
+/*!
+ * Enumeration of alternation type
+ */
+typedef enum eAlternateDrType
+{
+    /*!
+     * Type to use for an alternation
+     */
+    ALTERNATE_DR,
+    /*!
+     * Type to use to restore one alternation
+     */
+    ALTERNATE_DR_RESTORE
+}AlternateDrType_t;
 
 /*!
  * Parameter structure for the function RegionCalcBackOff.
@@ -1536,9 +1598,11 @@ uint8_t RegionDlChannelReq( LoRaMacRegion_t region, DlChannelReqParams_t* dlChan
  *
  * \param [IN] currentDr Current datarate.
  *
+ * \param [IN] type Alternation type.
+ *
  * \retval Datarate to apply.
  */
-int8_t RegionAlternateDr( LoRaMacRegion_t region, int8_t currentDr );
+int8_t RegionAlternateDr( LoRaMacRegion_t region, int8_t currentDr, AlternateDrType_t type );
 
 /*!
  * \brief Calculates the back-off time.

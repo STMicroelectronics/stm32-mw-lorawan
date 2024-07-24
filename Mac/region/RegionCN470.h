@@ -261,7 +261,7 @@ static const uint32_t BandwidthsCN470[] = { 125000, 125000, 125000, 125000, 1250
 /*!
  * Maximum payload with respect to the datarate index. Cannot operate with repeater.
  */
-static const uint8_t MaxPayloadOfDatarateCN470[] = { 51, 51, 51, 115, 222, 222 };
+static const uint8_t MaxPayloadOfDatarateCN470[] = { 51, 51, 51, 115, 242, 242 };
 
 /*!
  * Maximum payload with respect to the datarate index. Can operate with repeater.
@@ -421,7 +421,7 @@ uint8_t RegionCN470DlChannelReq( DlChannelReqParams_t* dlChannelReq );
  *
  * \retval Datarate to apply.
  */
-int8_t RegionCN470AlternateDr( int8_t currentDr );
+int8_t RegionCN470AlternateDr( int8_t currentDr, AlternateDrType_t type );
 
 /*!
  * \brief Calculates the back-off time.

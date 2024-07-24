@@ -107,7 +107,7 @@ LoRaMacSerializerStatus_t LoRaMacSerializerReJoinType0or2( LoRaMacMessageReJoinT
 
     macMsg->Buffer[bufItr++] = macMsg->ReJoinType;
 
-    memcpyr( &macMsg->Buffer[bufItr], macMsg->NetID, LORAMAC_NET_ID_FIELD_SIZE );
+    memcpy1( &macMsg->Buffer[bufItr], macMsg->NetID, LORAMAC_NET_ID_FIELD_SIZE );
     bufItr += LORAMAC_NET_ID_FIELD_SIZE;
 
     memcpyr( &macMsg->Buffer[bufItr], macMsg->DevEUI, LORAMAC_DEV_EUI_FIELD_SIZE );
@@ -134,19 +134,19 @@ LoRaMacSerializerStatus_t LoRaMacSerializerData( LoRaMacMessageData_t* macMsg )
                                + LORAMAC_FHDR_F_CTRL_FIELD_SIZE
                                + LORAMAC_FHDR_F_CNT_FIELD_SIZE;
 
-    if( macMsg->FRMPayloadSize == 0 )
+    computedBufSize += macMsg->FHDR.FCtrl.Bits.FOptsLen;
+
+    if( macMsg->FRMPayloadSize > 0 )
     {
-        if( macMsg->BufSize < computedBufSize )
-        {
-            return LORAMAC_SERIALIZER_ERROR_BUF_SIZE;
-        }
+        computedBufSize += LORAMAC_F_PORT_FIELD_SIZE;
     }
-    else
-    {   //If FRMPayload >0, FPort field is present.
-        if( macMsg->BufSize < computedBufSize + macMsg->FHDR.FCtrl.Bits.FOptsLen + macMsg->FRMPayloadSize + LORAMAC_F_PORT_FIELD_SIZE )
-        {
-            return LORAMAC_SERIALIZER_ERROR_BUF_SIZE;
-        }
+
+    computedBufSize += macMsg->FRMPayloadSize;
+    computedBufSize += LORAMAC_MIC_FIELD_SIZE;
+
+    if( macMsg->BufSize < computedBufSize )
+    {
+        return LORAMAC_SERIALIZER_ERROR_BUF_SIZE;
     }
 
     macMsg->Buffer[bufItr++] = macMsg->MHDR.Value;

@@ -220,6 +220,12 @@
 #define RU864_BEACON_CHANNEL_BW                     0
 
 /*!
+ * Ping slot channel datarate
+ */
+#define RU864_PING_SLOT_CHANNEL_DR                  DR_3
+
+
+/*!
  * Maximum number of bands
  */
 #define RU864_MAX_NB_BANDS                          1
@@ -421,7 +427,7 @@ uint8_t RegionRU864DlChannelReq( DlChannelReqParams_t* dlChannelReq );
  *
  * \retval Datarate to apply.
  */
-int8_t RegionRU864AlternateDr( int8_t currentDr );
+int8_t RegionRU864AlternateDr( int8_t currentDr, AlternateDrType_t type );
 
 /*!
  * \brief Calculates the back-off time.

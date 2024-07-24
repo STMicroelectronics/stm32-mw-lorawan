@@ -32,10 +32,14 @@
 
 #include "RegionCommon.h"
 #include "RegionUS915.h"
-#include "util_console.h"
+#include "lorawan_conf.h"
+#include "mw_log_conf.h"
 
 // Definitions
 #define CHANNELS_MASK_SIZE              6
+
+// A mask to select only valid 500KHz channels
+#define CHANNELS_MASK_500KHZ_MASK       0x00FF
 
 /*!
  * Region specific context
@@ -142,6 +146,7 @@ static LoRaMacStatus_t ComputeNext125kHzJoinChannel( uint8_t* newChannelIndex )
     uint16_t channelMaskRemaining;
     uint8_t findAvailableChannelsIndex[8] = { 0 };
     uint8_t availableChannels = 0;
+    uint8_t startIndex = NvmCtx.JoinChannelGroupsCurrentIndex;
 
     // Null pointer check
     if( newChannelIndex == NULL )
@@ -149,37 +154,47 @@ static LoRaMacStatus_t ComputeNext125kHzJoinChannel( uint8_t* newChannelIndex )
         return LORAMAC_STATUS_PARAMETER_INVALID;
     }
 
-    // Current ChannelMaskRemaining, two groups per channel mask. For example Group 0 and 1 (8 bit) are ChannelMaskRemaining 0 (16 bit), etc.
-    currentChannelsMaskRemainingIndex = (uint8_t) NvmCtx.JoinChannelGroupsCurrentIndex / 2;
+    do {
+        // Current ChannelMaskRemaining, two groups per channel mask. For example Group 0 and 1 (8 bit) are ChannelMaskRemaining 0 (16 bit), etc.
+        currentChannelsMaskRemainingIndex = (uint8_t) startIndex / 2;
 
-    // For even numbers we need the 8 LSBs and for uneven the 8 MSBs
-    if( ( NvmCtx.JoinChannelGroupsCurrentIndex % 2 ) == 0 )
+        // For even numbers we need the 8 LSBs and for uneven the 8 MSBs
+        if( ( startIndex % 2 ) == 0 )
+        {
+            channelMaskRemaining = ( NvmCtx.ChannelsMaskRemaining[currentChannelsMaskRemainingIndex] & 0x00FF );
+        }
+        else
+        {
+            channelMaskRemaining = ( ( NvmCtx.ChannelsMaskRemaining[currentChannelsMaskRemainingIndex] >> 8 ) & 0x00FF );
+        }
+
+
+        if( FindAvailable125kHzChannels( findAvailableChannelsIndex, channelMaskRemaining, &availableChannels ) == LORAMAC_STATUS_PARAMETER_INVALID )
+        {
+            return LORAMAC_STATUS_PARAMETER_INVALID;
+        }
+
+        if ( availableChannels > 0 )
+        {
+            // Choose randomly a free channel 125kHz
+            *newChannelIndex = ( startIndex * 8 ) + findAvailableChannelsIndex[randr( 0, ( availableChannels - 1 ) )];
+        }
+
+        // Increment start index
+        startIndex++;
+        if ( startIndex > 7 )
+        {
+            startIndex = 0;
+        }
+    } while( ( availableChannels == 0 ) && ( startIndex != NvmCtx.JoinChannelGroupsCurrentIndex ) );
+
+    if ( availableChannels > 0 )
     {
-        channelMaskRemaining = ( NvmCtx.ChannelsMaskRemaining[currentChannelsMaskRemainingIndex] & 0x00FF );
-    }
-    else
-    {
-        channelMaskRemaining = ( ( NvmCtx.ChannelsMaskRemaining[currentChannelsMaskRemainingIndex] >> 8 ) & 0x00FF );
+        NvmCtx.JoinChannelGroupsCurrentIndex = startIndex;
+        return LORAMAC_STATUS_OK;
     }
 
-
-    if( FindAvailable125kHzChannels( findAvailableChannelsIndex, channelMaskRemaining, &availableChannels ) == LORAMAC_STATUS_PARAMETER_INVALID )
-    {
-        return LORAMAC_STATUS_PARAMETER_INVALID;
-    }
-
-    // Choose randomly a free channel 125kHz
-    *newChannelIndex = findAvailableChannelsIndex[randr( 0, ( availableChannels - 1 ) )];
-
-    NvmCtx.JoinChannelGroupsCurrentIndex++;
-
-    if( NvmCtx.JoinChannelGroupsCurrentIndex > 8 )
-    {
-        // Start again from group 0
-        NvmCtx.JoinChannelGroupsCurrentIndex = 0;
-    }
-
-    return LORAMAC_STATUS_OK;
+    return LORAMAC_STATUS_PARAMETER_INVALID;
 }
 
 static uint32_t GetBandwidth( uint32_t drIndex )
@@ -215,6 +230,30 @@ static int8_t LimitTxPower( int8_t txPower, int8_t maxBandTxPower, int8_t datara
         }
     }
     return txPowerResult;
+}
+
+static bool VerifyRfFreq( uint32_t freq )
+{
+    // Check radio driver support
+    if( Radio.CheckRfFrequency( freq ) == false )
+    {
+        return false;
+    }
+
+    // Rx frequencies
+    if( ( freq < US915_FIRST_RX1_CHANNEL ) ||
+        ( freq > US915_LAST_RX1_CHANNEL ) ||
+        ( ( ( freq - ( uint32_t ) US915_FIRST_RX1_CHANNEL ) % ( uint32_t ) US915_STEPWIDTH_RX1_CHANNEL ) != 0 ) )
+    {
+        return false;
+    }
+
+    // Test for frequency range - take RX and TX freqencies into account
+    if( ( freq < 902300000 ) ||  ( freq > 927500000 ) )
+    {
+        return false;
+    }
+    return true;
 }
 
 static uint8_t CountNbOfEnabledChannels( uint8_t datarate, uint16_t* channelsMask, ChannelParams_t* channels, Band_t* bands, uint8_t* enabledChannels, uint8_t* delayTx )
@@ -389,12 +428,15 @@ PhyParam_t RegionUS915GetPhyParam( GetPhyParams_t* getPhy )
             break;
         }
         case PHY_DEF_MAX_EIRP:
+        {
+            phyParam.fValue = US915_DEFAULT_MAX_ERP + (float) 2.15;
+            break;
+        }
         case PHY_DEF_ANTENNA_GAIN:
         {
             phyParam.fValue = 0;
             break;
         }
-
         case PHY_BEACON_CHANNEL_FREQ:
         {
             phyParam.Value = US915_BEACON_CHANNEL_FREQ;
@@ -459,7 +501,7 @@ void RegionUS915InitDefaults( InitDefaultsParams_t* params )
             NvmCtx.JoinChannelGroupsCurrentIndex = 0;
 
             // Initialize the join trials counter
-            NvmCtx.JoinTrialsCounter = 1;
+            NvmCtx.JoinTrialsCounter = 0;
 
             // Channels
             // 125 kHz channels
@@ -511,15 +553,6 @@ void RegionUS915InitDefaults( InitDefaultsParams_t* params )
             }
             break;
         }
-        case INIT_TYPE_APP_DEFAULTS:
-        {
-            // Copy channels default mask
-            RegionCommonChanMaskCopy( NvmCtx.ChannelsMask, NvmCtx.ChannelsDefaultMask, 6 );
-
-            // Copy into channels mask remaining
-            RegionCommonChanMaskCopy( NvmCtx.ChannelsMaskRemaining, NvmCtx.ChannelsMask, 6 );
-            break;
-        }
         default:
         {
             break;
@@ -537,6 +570,10 @@ bool RegionUS915Verify( VerifyParams_t* verify, PhyAttribute_t phyAttribute )
 {
     switch( phyAttribute )
     {
+        case PHY_FREQUENCY:
+        {
+            return VerifyRfFreq( verify->Frequency );
+        }
         case PHY_TX_DR:
         {
             return RegionCommonValueInRange( verify->DatarateParams.Datarate, US915_TX_MIN_DATARATE, US915_TX_MAX_DATARATE );
@@ -583,6 +620,10 @@ void RegionUS915ApplyCFList( ApplyCFListParams_t* applyCFList )
     {
         NvmCtx.ChannelsMask[chMaskItr] = (uint16_t) (0x00FF & applyCFList->Payload[cntPayload]);
         NvmCtx.ChannelsMask[chMaskItr] |= (uint16_t) (applyCFList->Payload[cntPayload+1] << 8);
+        if( chMaskItr == 4 )
+        {
+            NvmCtx.ChannelsMask[chMaskItr] = NvmCtx.ChannelsMask[chMaskItr] & CHANNELS_MASK_500KHZ_MASK;
+        }
         // Set the channel mask to the remaining
         NvmCtx.ChannelsMaskRemaining[chMaskItr] &= NvmCtx.ChannelsMask[chMaskItr];
     }
@@ -604,6 +645,9 @@ bool RegionUS915ChanMaskSet( ChanMaskSetParams_t* chanMaskSet )
         case CHANNELS_MASK:
         {
             RegionCommonChanMaskCopy( NvmCtx.ChannelsMask, chanMaskSet->ChannelsMaskIn, CHANNELS_MASK_SIZE );
+
+            NvmCtx.ChannelsDefaultMask[4] = NvmCtx.ChannelsDefaultMask[4] & CHANNELS_MASK_500KHZ_MASK;
+            NvmCtx.ChannelsDefaultMask[5] = 0x0000;
 
             for( uint8_t i = 0; i < CHANNELS_MASK_SIZE; i++ )
             { // Copy-And the channels mask
@@ -641,6 +685,7 @@ bool RegionUS915RxConfig( RxConfigParams_t* rxConfig, int8_t* datarate )
     uint8_t maxPayload = 0;
     int8_t phyDr = 0;
     uint32_t frequency = rxConfig->Frequency;
+    const char *slotStrings[] = { "1", "2", "C", "Multi_C", "P", "Multi_P" };
 
     if( Radio.GetStatus( ) != RF_IDLE )
     {
@@ -670,7 +715,14 @@ bool RegionUS915RxConfig( RxConfigParams_t* rxConfig, int8_t* datarate )
         maxPayload = MaxPayloadOfDatarateUS915[dr];
     }
     Radio.SetMaxPayloadLength( MODEM_LORA, maxPayload + LORA_MAC_FRMPAYLOAD_OVERHEAD );
-    TVL1( PRINTF( "RX on freq %d Hz at DR %d\n\r", frequency, dr );)
+    if ( rxConfig->RxSlot < RX_SLOT_NONE )
+    {
+        MW_LOG(TS_ON, VLEVEL_M,  "RX_%s on freq %d Hz at DR %d\r\n", slotStrings[rxConfig->RxSlot], frequency, dr );
+    }
+    else
+    {
+        MW_LOG(TS_ON, VLEVEL_M,  "RX on freq %d Hz at DR %d\r\n", frequency, dr );
+    }
 
     *datarate = (uint8_t) dr;
     return true;
@@ -689,8 +741,8 @@ bool RegionUS915TxConfig( TxConfigParams_t* txConfig, int8_t* txPower, TimerTime
     // Setup the radio frequency
     Radio.SetChannel( NvmCtx.Channels[txConfig->Channel].Frequency );
 
-    Radio.SetTxConfig( MODEM_LORA, phyTxPower, 0, bandwidth, phyDr, 1, 8, false, true, 0, 0, false, 3000 );
-    TVL1( PRINTF( "TX on freq %d Hz at DR %d\n\r", NvmCtx.Channels[txConfig->Channel].Frequency, txConfig->Datarate );)
+    Radio.SetTxConfig( MODEM_LORA, phyTxPower, 0, bandwidth, phyDr, 1, 8, false, true, 0, 0, false, 4000 );
+    MW_LOG(TS_ON, VLEVEL_M,  "TX on freq %d Hz at DR %d\r\n", NvmCtx.Channels[txConfig->Channel].Frequency, txConfig->Datarate );
 
     // Setup maximum payload lenght of the radio driver
     Radio.SetMaxPayloadLength( MODEM_LORA, txConfig->PktLen );
@@ -736,7 +788,7 @@ uint8_t RegionUS915LinkAdrReq( LinkAdrReqParams_t* linkAdrReq, int8_t* drOut, in
             channelsMask[2] = 0xFFFF;
             channelsMask[3] = 0xFFFF;
             // Apply chMask to channels 64 to 71
-            channelsMask[4] = linkAdrParams.ChMask;
+            channelsMask[4] = linkAdrParams.ChMask & CHANNELS_MASK_500KHZ_MASK;
         }
         else if( linkAdrParams.ChMaskCtrl == 7 )
         {
@@ -746,7 +798,7 @@ uint8_t RegionUS915LinkAdrReq( LinkAdrReqParams_t* linkAdrReq, int8_t* drOut, in
             channelsMask[2] = 0x0000;
             channelsMask[3] = 0x0000;
             // Apply chMask to channels 64 to 71
-            channelsMask[4] = linkAdrParams.ChMask;
+            channelsMask[4] = linkAdrParams.ChMask & CHANNELS_MASK_500KHZ_MASK;
         }
         else if( linkAdrParams.ChMaskCtrl == 5 )
         {
@@ -865,13 +917,9 @@ uint8_t RegionUS915LinkAdrReq( LinkAdrReqParams_t* linkAdrReq, int8_t* drOut, in
 uint8_t RegionUS915RxParamSetupReq( RxParamSetupReqParams_t* rxParamSetupReq )
 {
     uint8_t status = 0x07;
-    uint32_t freq = rxParamSetupReq->Frequency;
 
     // Verify radio frequency
-    if( ( Radio.CheckRfFrequency( freq ) == false ) ||
-        ( freq < US915_FIRST_RX1_CHANNEL ) ||
-        ( freq > US915_LAST_RX1_CHANNEL ) ||
-        ( ( ( freq - ( uint32_t ) US915_FIRST_RX1_CHANNEL ) % ( uint32_t ) US915_STEPWIDTH_RX1_CHANNEL ) != 0 ) )
+    if( VerifyRfFreq( rxParamSetupReq->Frequency ) == false )
     {
         status &= 0xFE; // Channel frequency KO
     }
@@ -912,10 +960,18 @@ uint8_t RegionUS915DlChannelReq( DlChannelReqParams_t* dlChannelReq )
     return 0;
 }
 
-int8_t RegionUS915AlternateDr( int8_t currentDr )
+int8_t RegionUS915AlternateDr( int8_t currentDr, AlternateDrType_t type )
 {
     // Alternates the data rate according to the channel sequence:
     // Eight times a 125kHz DR_0 and then one 500kHz DR_4 channel
+    if( type == ALTERNATE_DR )
+    {
+        NvmCtx.JoinTrialsCounter++;
+    }
+    else
+    {
+        NvmCtx.JoinTrialsCounter--;
+    }
 
     if( NvmCtx.JoinTrialsCounter % 9 == 0 )
     {
@@ -926,7 +982,6 @@ int8_t RegionUS915AlternateDr( int8_t currentDr )
     {
         currentDr = DR_0;
     }
-    NvmCtx.JoinTrialsCounter++;
     return currentDr;
 }
 
@@ -964,13 +1019,14 @@ LoRaMacStatus_t RegionUS915NextChannel( NextChanParams_t* nextChanParams, uint8_
     // Check other channels
     if( nextChanParams->Datarate >= DR_4 )
     {
-        if( ( NvmCtx.ChannelsMaskRemaining[4] & 0x00FF ) == 0 )
+        if( ( NvmCtx.ChannelsMaskRemaining[4] & CHANNELS_MASK_500KHZ_MASK ) == 0 )
         {
             NvmCtx.ChannelsMaskRemaining[4] = NvmCtx.ChannelsMask[4];
         }
     }
 
-    if( nextChanParams->AggrTimeOff <= TimerGetElapsedTime( nextChanParams->LastAggrTx ) )
+    TimerTime_t elapsed = TimerGetElapsedTime( nextChanParams->LastAggrTx );
+    if( ( nextChanParams->LastAggrTx == 0 ) || ( nextChanParams->AggrTimeOff <= elapsed ) )
     {
         // Reset Aggregated time off
         *aggregatedTimeOff = 0;
@@ -986,7 +1042,7 @@ LoRaMacStatus_t RegionUS915NextChannel( NextChanParams_t* nextChanParams, uint8_
     else
     {
         delayTx++;
-        nextTxDelay = nextChanParams->AggrTimeOff - TimerGetElapsedTime( nextChanParams->LastAggrTx );
+        nextTxDelay = nextChanParams->AggrTimeOff - elapsed;
     }
 
     if( nbEnabledChannels > 0 )
@@ -1010,14 +1066,14 @@ LoRaMacStatus_t RegionUS915NextChannel( NextChanParams_t* nextChanParams, uint8_
                 {
                     return LORAMAC_STATUS_PARAMETER_INVALID;
                 }
-                *channel = ( NvmCtx.JoinChannelGroupsCurrentIndex * 8 ) + newChannelIndex;
+                *channel = newChannelIndex;
             }
             // 500kHz Channels (64 - 71) DR4
             else
             {
                 // Choose the next available channel
                 uint8_t i = 0;
-                while( ( ( NvmCtx.ChannelsMaskRemaining[4] & 0x00FF ) & ( 1 << i ) ) == 0 )
+                while( ( ( NvmCtx.ChannelsMaskRemaining[4] & CHANNELS_MASK_500KHZ_MASK ) & ( 1 << i ) ) == 0 )
                 {
                     i++;
                 }

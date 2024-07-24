@@ -32,6 +32,7 @@
 #include "radio.h"
 #include "utilities.h"
 #include "RegionCommon.h"
+#include "mw_log_conf.h"
 
 #define BACKOFF_DC_1_HOUR       100
 #define BACKOFF_DC_10_HOURS     1000
@@ -162,15 +163,17 @@ void RegionCommonSetBandTxDone( bool joined, Band_t* band, TimerTime_t lastTxDon
 
 TimerTime_t RegionCommonUpdateBandTimeOff( bool joined, bool dutyCycle, Band_t* bands, uint8_t nbBands )
 {
-    TimerTime_t nextTxDelay = ( TimerTime_t )( -1 );
+    TimerTime_t nextTxDelay = TIMERTIME_T_MAX;
 
     // Update bands Time OFF
     for( uint8_t i = 0; i < nbBands; i++ )
     {
         if( joined == false )
         {
-            uint32_t txDoneTime =  MAX( TimerGetElapsedTime( bands[i].LastJoinTxDoneTime ),
-                                        ( dutyCycle == true ) ? TimerGetElapsedTime( bands[i].LastTxDoneTime ) : 0 );
+            TimerTime_t elapsedJoin = TimerGetElapsedTime( bands[i].LastJoinTxDoneTime );
+            TimerTime_t elapsedTx = TimerGetElapsedTime( bands[i].LastTxDoneTime );
+            TimerTime_t txDoneTime =  MAX( elapsedJoin,
+                                        ( dutyCycle == true ) ? elapsedTx : 0 );
 
             if( bands[i].TimeOff <= txDoneTime )
             {
@@ -185,14 +188,14 @@ TimerTime_t RegionCommonUpdateBandTimeOff( bool joined, bool dutyCycle, Band_t* 
         {
             if( dutyCycle == true )
             {
-                if( bands[i].TimeOff <= TimerGetElapsedTime( bands[i].LastTxDoneTime ) )
+                TimerTime_t elapsed = TimerGetElapsedTime( bands[i].LastTxDoneTime );
+                if( bands[i].TimeOff <= elapsed )
                 {
                     bands[i].TimeOff = 0;
                 }
                 if( bands[i].TimeOff != 0 )
                 {
-                    nextTxDelay = MIN( bands[i].TimeOff - TimerGetElapsedTime( bands[i].LastTxDoneTime ),
-                                       nextTxDelay );
+                    nextTxDelay = MIN( bands[i].TimeOff - elapsed, nextTxDelay );
                 }
             }
             else
@@ -202,7 +205,8 @@ TimerTime_t RegionCommonUpdateBandTimeOff( bool joined, bool dutyCycle, Band_t* 
             }
         }
     }
-    return nextTxDelay;
+
+    return ( nextTxDelay == TIMERTIME_T_MAX ) ? 0 : nextTxDelay;
 }
 
 uint8_t RegionCommonParseLinkAdrReq( uint8_t* payload, RegionCommonLinkAdrParams_t* linkAdrParams )
@@ -381,4 +385,6 @@ void RegionCommonRxBeaconSetup( RegionCommonRxBeaconSetupParams_t* rxBeaconSetup
                        1, 0, 10, rxBeaconSetupParams->SymbolTimeout, true, rxBeaconSetupParams->BeaconSize, false, 0, 0, false, rxContinuous );
 
     Radio.Rx( rxBeaconSetupParams->RxTime );
+    
+    MW_LOG(TS_ON, VLEVEL_M, "RX_BC on freq %d Hz at DR %d\r\n", rxBeaconSetupParams->Frequency, rxBeaconSetupParams->BeaconDatarate );
 }

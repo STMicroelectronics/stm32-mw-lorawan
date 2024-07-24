@@ -1,30 +1,38 @@
-/*!
- * \file      radio.h
- *
- * \brief     Radio driver API definition
- *
- * \copyright Revised BSD License, see section \ref LICENSE.
- *
- * \code
- *                ______                              _
- *               / _____)             _              | |
- *              ( (____  _____ ____ _| |_ _____  ____| |__
- *               \____ \| ___ |    (_   _) ___ |/ ___)  _ \
- *               _____) ) ____| | | || |_| ____( (___| | | |
- *              (______/|_____)_|_|_| \__)_____)\____)_| |_|
- *              (C)2013-2017 Semtech
- *
- * \endcode
- *
- * \author    Miguel Luis ( Semtech )
- *
- * \author    Gregory Cristian ( Semtech )
+/*
+ / _____)             _              | |
+( (____  _____ ____ _| |_ _____  ____| |__
+ \____ \| ___ |    (_   _) ___ |/ ___)  _ \
+ _____) ) ____| | | || |_| ____( (___| | | |
+(______/|_____)_|_|_| \__)_____)\____)_| |_|
+    (C)2013 Semtech
+
+Description: Generic radio driver definition
+
+License: Revised BSD License, see LICENSE.TXT file include in the project
+
+Maintainer: Miguel Luis and Gregory Cristian
+*/
+/**
+  ******************************************************************************
+  *  
+  *          Portions COPYRIGHT 2020 STMicroelectronics                       
+  *
+  * @file    radio.h
+  * @author  MCD Application Team
+  * @brief   generic radio driver definition
+  ******************************************************************************
  */
+ 
+/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __RADIO_H__
 #define __RADIO_H__
 
+/* Includes ------------------------------------------------------------------*/
+
 #include <stdint.h>
 #include <stdbool.h>
+
+/* Private typedef -----------------------------------------------------------*/
 
 /*!
  * Radio driver supported modems
@@ -33,6 +41,9 @@ typedef enum
 {
     MODEM_FSK = 0,
     MODEM_LORA,
+    MODEM_BPSK,
+    MODEM_SIGFOX_TX,
+    MODEM_SIGFOX_RX,
 }RadioModems_t;
 
 /*!
@@ -65,7 +76,7 @@ typedef struct
      * \param [IN] payload Received buffer pointer
      * \param [IN] size    Received buffer size
      * \param [IN] rssi    RSSI value computed while receiving the frame [dBm]
-     * \param [IN] snr     Raw SNR value given by the radio hardware
+     * \param [IN] snr     SNR value computed while receiving the frame [dB]
      *                     FSK : N/A ( set to 0 )
      *                     LoRa: SNR value in dB
      */
@@ -101,11 +112,11 @@ struct Radio_s
     /*!
      * \brief Initializes the io
      */
-    void    ( *IoInit )( void );
+//    void    ( *IoInit )( void );
     /*!
      * \brief Deinitializes the io
      */
-    void    ( *IoDeInit )( void );
+//    void    ( *IoDeInit )( void );
     /*!
      * \brief Initializes the radio
      *
@@ -318,7 +329,7 @@ struct Radio_s
      * \param [IN] buffer Buffer containing the new register's values
      * \param [IN] size   Number of registers to be written
      */
-    void    ( *WriteBuffer )( uint16_t addr, uint8_t *buffer, uint8_t size );
+//    void    ( *WriteBuffer )( uint16_t addr, uint8_t *buffer, uint8_t size );
     /*!
      * \brief Reads multiple radio registers starting at address
      *
@@ -326,7 +337,7 @@ struct Radio_s
      * \param [OUT] buffer Buffer where to copy the registers data
      * \param [IN] size Number of registers to be read
      */
-    void    ( *ReadBuffer )( uint16_t addr, uint8_t *buffer, uint8_t size );
+//    void    ( *ReadBuffer )( uint16_t addr, uint8_t *buffer, uint8_t size );
     /*!
      * \brief Sets the maximum payload length.
      *
@@ -373,6 +384,19 @@ struct Radio_s
      * \param [in]  sleepTime     Structure describing sleep timeout value
      */
     void ( *SetRxDutyCycle ) ( uint32_t rxTime, uint32_t sleepTime );
+    
+    
+       
+    /*!
+     * @brief Sets the Transmitter in continuous PRBS mode
+     *
+     * \remark power and datarate shall be configured prior calling TxPrbs
+     */
+    void (*TxPrbs) ( void );
+    /*!
+     * @brief Sets the Transmitter in continuous unmodulated Carrier mode
+     */
+    void (*TxCw) ( void );
 };
 
 /*!
@@ -382,5 +406,13 @@ struct Radio_s
  *         board implementation
  */
 extern const struct Radio_s Radio;
+/* Private defines -----------------------------------------------------------*/
+/* Private macros ------------------------------------------------------------*/
+/* Private variables ---------------------------------------------------------*/
+/* Global variables ----------------------------------------------------------*/
+/* Private function prototypes -----------------------------------------------*/
+/* Functions Definition ------------------------------------------------------*/
 
 #endif // __RADIO_H__
+
+/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

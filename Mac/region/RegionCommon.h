@@ -37,6 +37,8 @@
 #ifndef __REGIONCOMMON_H__
 #define __REGIONCOMMON_H__
 
+#include "utilities.h"
+#include "radio.h"
 #include "LoRaMacTypes.h"
 #include "region/Region.h"
 
@@ -385,12 +387,16 @@ void RegionCommonComputeRxWindowParameters( double tSymbol, uint8_t minRxSymbols
 
 /*!
  * \brief Computes the txPower, based on the max EIRP and the antenna gain.
+ * 
+ * \remark US915 region uses a conducted power as input value for maxEirp.
+ *         Thus, the antennaGain parameter must be set to 0.
  *
  * \param [IN] txPower TX power index.
  *
  * \param [IN] maxEirp Maximum EIRP.
  *
- * \param [IN] antennaGain Antenna gain.
+ * \param [IN] antennaGain Antenna gain. Referenced to the isotropic antenna.
+ *                         Value is in dBi. ( antennaGain[dBi] = measuredAntennaGain[dBd] + 2.15 )
  *
  * \retval Returns the physical TX power.
  */

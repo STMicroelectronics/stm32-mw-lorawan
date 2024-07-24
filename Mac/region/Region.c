@@ -50,14 +50,14 @@
 #define AS923_NEW_CHANNEL_REQ( )                   AS923_CASE { return RegionAS923NewChannelReq( newChannelReq ); }
 #define AS923_TX_PARAM_SETUP_REQ( )                AS923_CASE { return RegionAS923TxParamSetupReq( txParamSetupReq ); }
 #define AS923_DL_CHANNEL_REQ( )                    AS923_CASE { return RegionAS923DlChannelReq( dlChannelReq ); }
-#define AS923_ALTERNATE_DR( )                      AS923_CASE { return RegionAS923AlternateDr( currentDr ); }
+#define AS923_ALTERNATE_DR( )                      AS923_CASE { return RegionAS923AlternateDr( currentDr, type ); }
 #define AS923_CALC_BACKOFF( )                      AS923_CASE { RegionAS923CalcBackOff( calcBackOff ); break; }
 #define AS923_NEXT_CHANNEL( )                      AS923_CASE { return RegionAS923NextChannel( nextChanParams, channel, time, aggregatedTimeOff ); }
 #define AS923_CHANNEL_ADD( )                       AS923_CASE { return RegionAS923ChannelAdd( channelAdd ); }
 #define AS923_CHANNEL_REMOVE( )                    AS923_CASE { return RegionAS923ChannelsRemove( channelRemove ); }
 #define AS923_SET_CONTINUOUS_WAVE( )               AS923_CASE { RegionAS923SetContinuousWave( continuousWave ); break; }
 #define AS923_APPLY_DR_OFFSET( )                   AS923_CASE { return RegionAS923ApplyDrOffset( downlinkDwellTime, dr, drOffset ); }
-#define AS923_RX_BEACON_SETUP( )                   AS923_CASE { RegionAS923RxBeaconSetup( rxBeaconSetup, outDr ); }
+#define AS923_RX_BEACON_SETUP( )                   AS923_CASE { RegionAS923RxBeaconSetup( rxBeaconSetup, outDr ); break; }
 #else
 #define AS923_IS_ACTIVE( )
 #define AS923_GET_PHY_PARAM( )
@@ -104,14 +104,14 @@
 #define AU915_NEW_CHANNEL_REQ( )                   AU915_CASE { return RegionAU915NewChannelReq( newChannelReq ); }
 #define AU915_TX_PARAM_SETUP_REQ( )                AU915_CASE { return RegionAU915TxParamSetupReq( txParamSetupReq ); }
 #define AU915_DL_CHANNEL_REQ( )                    AU915_CASE { return RegionAU915DlChannelReq( dlChannelReq ); }
-#define AU915_ALTERNATE_DR( )                      AU915_CASE { return RegionAU915AlternateDr( currentDr ); }
+#define AU915_ALTERNATE_DR( )                      AU915_CASE { return RegionAU915AlternateDr( currentDr, type ); }
 #define AU915_CALC_BACKOFF( )                      AU915_CASE { RegionAU915CalcBackOff( calcBackOff ); break; }
 #define AU915_NEXT_CHANNEL( )                      AU915_CASE { return RegionAU915NextChannel( nextChanParams, channel, time, aggregatedTimeOff ); }
 #define AU915_CHANNEL_ADD( )                       AU915_CASE { return RegionAU915ChannelAdd( channelAdd ); }
 #define AU915_CHANNEL_REMOVE( )                    AU915_CASE { return RegionAU915ChannelsRemove( channelRemove ); }
 #define AU915_SET_CONTINUOUS_WAVE( )               AU915_CASE { RegionAU915SetContinuousWave( continuousWave ); break; }
 #define AU915_APPLY_DR_OFFSET( )                   AU915_CASE { return RegionAU915ApplyDrOffset( downlinkDwellTime, dr, drOffset ); }
-#define AU915_RX_BEACON_SETUP( )                   AU915_CASE { RegionAU915RxBeaconSetup( rxBeaconSetup, outDr ); }
+#define AU915_RX_BEACON_SETUP( )                   AU915_CASE { RegionAU915RxBeaconSetup( rxBeaconSetup, outDr ); break; }
 #else
 #define AU915_IS_ACTIVE( )
 #define AU915_GET_PHY_PARAM( )
@@ -158,14 +158,14 @@
 #define CN470_NEW_CHANNEL_REQ( )                   CN470_CASE { return RegionCN470NewChannelReq( newChannelReq ); }
 #define CN470_TX_PARAM_SETUP_REQ( )                CN470_CASE { return RegionCN470TxParamSetupReq( txParamSetupReq ); }
 #define CN470_DL_CHANNEL_REQ( )                    CN470_CASE { return RegionCN470DlChannelReq( dlChannelReq ); }
-#define CN470_ALTERNATE_DR( )                      CN470_CASE { return RegionCN470AlternateDr( currentDr ); }
+#define CN470_ALTERNATE_DR( )                      CN470_CASE { return RegionCN470AlternateDr( currentDr, type ); }
 #define CN470_CALC_BACKOFF( )                      CN470_CASE { RegionCN470CalcBackOff( calcBackOff ); break; }
 #define CN470_NEXT_CHANNEL( )                      CN470_CASE { return RegionCN470NextChannel( nextChanParams, channel, time, aggregatedTimeOff ); }
 #define CN470_CHANNEL_ADD( )                       CN470_CASE { return RegionCN470ChannelAdd( channelAdd ); }
 #define CN470_CHANNEL_REMOVE( )                    CN470_CASE { return RegionCN470ChannelsRemove( channelRemove ); }
 #define CN470_SET_CONTINUOUS_WAVE( )               CN470_CASE { RegionCN470SetContinuousWave( continuousWave ); break; }
 #define CN470_APPLY_DR_OFFSET( )                   CN470_CASE { return RegionCN470ApplyDrOffset( downlinkDwellTime, dr, drOffset ); }
-#define CN470_RX_BEACON_SETUP( )                   CN470_CASE { RegionCN470RxBeaconSetup( rxBeaconSetup, outDr ); }
+#define CN470_RX_BEACON_SETUP( )                   CN470_CASE { RegionCN470RxBeaconSetup( rxBeaconSetup, outDr ); break; }
 #else
 #define CN470_IS_ACTIVE( )
 #define CN470_GET_PHY_PARAM( )
@@ -212,14 +212,14 @@
 #define CN779_NEW_CHANNEL_REQ( )                   CN779_CASE { return RegionCN779NewChannelReq( newChannelReq ); }
 #define CN779_TX_PARAM_SETUP_REQ( )                CN779_CASE { return RegionCN779TxParamSetupReq( txParamSetupReq ); }
 #define CN779_DL_CHANNEL_REQ( )                    CN779_CASE { return RegionCN779DlChannelReq( dlChannelReq ); }
-#define CN779_ALTERNATE_DR( )                      CN779_CASE { return RegionCN779AlternateDr( currentDr ); }
+#define CN779_ALTERNATE_DR( )                      CN779_CASE { return RegionCN779AlternateDr( currentDr, type ); }
 #define CN779_CALC_BACKOFF( )                      CN779_CASE { RegionCN779CalcBackOff( calcBackOff ); break; }
 #define CN779_NEXT_CHANNEL( )                      CN779_CASE { return RegionCN779NextChannel( nextChanParams, channel, time, aggregatedTimeOff ); }
 #define CN779_CHANNEL_ADD( )                       CN779_CASE { return RegionCN779ChannelAdd( channelAdd ); }
 #define CN779_CHANNEL_REMOVE( )                    CN779_CASE { return RegionCN779ChannelsRemove( channelRemove ); }
 #define CN779_SET_CONTINUOUS_WAVE( )               CN779_CASE { RegionCN779SetContinuousWave( continuousWave ); break; }
 #define CN779_APPLY_DR_OFFSET( )                   CN779_CASE { return RegionCN779ApplyDrOffset( downlinkDwellTime, dr, drOffset ); }
-#define CN779_RX_BEACON_SETUP( )                   CN779_CASE { RegionCN779RxBeaconSetup( rxBeaconSetup, outDr ); }
+#define CN779_RX_BEACON_SETUP( )                   CN779_CASE { RegionCN779RxBeaconSetup( rxBeaconSetup, outDr ); break; }
 #else
 #define CN779_IS_ACTIVE( )
 #define CN779_GET_PHY_PARAM( )
@@ -266,14 +266,14 @@
 #define EU433_NEW_CHANNEL_REQ( )                   EU433_CASE { return RegionEU433NewChannelReq( newChannelReq ); }
 #define EU433_TX_PARAM_SETUP_REQ( )                EU433_CASE { return RegionEU433TxParamSetupReq( txParamSetupReq ); }
 #define EU433_DL_CHANNEL_REQ( )                    EU433_CASE { return RegionEU433DlChannelReq( dlChannelReq ); }
-#define EU433_ALTERNATE_DR( )                      EU433_CASE { return RegionEU433AlternateDr( currentDr ); }
+#define EU433_ALTERNATE_DR( )                      EU433_CASE { return RegionEU433AlternateDr( currentDr, type ); }
 #define EU433_CALC_BACKOFF( )                      EU433_CASE { RegionEU433CalcBackOff( calcBackOff ); break; }
 #define EU433_NEXT_CHANNEL( )                      EU433_CASE { return RegionEU433NextChannel( nextChanParams, channel, time, aggregatedTimeOff ); }
 #define EU433_CHANNEL_ADD( )                       EU433_CASE { return RegionEU433ChannelAdd( channelAdd ); }
 #define EU433_CHANNEL_REMOVE( )                    EU433_CASE { return RegionEU433ChannelsRemove( channelRemove ); }
 #define EU433_SET_CONTINUOUS_WAVE( )               EU433_CASE { RegionEU433SetContinuousWave( continuousWave ); break; }
 #define EU433_APPLY_DR_OFFSET( )                   EU433_CASE { return RegionEU433ApplyDrOffset( downlinkDwellTime, dr, drOffset ); }
-#define EU433_RX_BEACON_SETUP( )                   EU433_CASE { RegionEU433RxBeaconSetup( rxBeaconSetup, outDr ); }
+#define EU433_RX_BEACON_SETUP( )                   EU433_CASE { RegionEU433RxBeaconSetup( rxBeaconSetup, outDr ); break; }
 #else
 #define EU433_IS_ACTIVE( )
 #define EU433_GET_PHY_PARAM( )
@@ -320,14 +320,14 @@
 #define EU868_NEW_CHANNEL_REQ( )                   EU868_CASE { return RegionEU868NewChannelReq( newChannelReq ); }
 #define EU868_TX_PARAM_SETUP_REQ( )                EU868_CASE { return RegionEU868TxParamSetupReq( txParamSetupReq ); }
 #define EU868_DL_CHANNEL_REQ( )                    EU868_CASE { return RegionEU868DlChannelReq( dlChannelReq ); }
-#define EU868_ALTERNATE_DR( )                      EU868_CASE { return RegionEU868AlternateDr( currentDr ); }
+#define EU868_ALTERNATE_DR( )                      EU868_CASE { return RegionEU868AlternateDr( currentDr, type ); }
 #define EU868_CALC_BACKOFF( )                      EU868_CASE { RegionEU868CalcBackOff( calcBackOff ); break; }
 #define EU868_NEXT_CHANNEL( )                      EU868_CASE { return RegionEU868NextChannel( nextChanParams, channel, time, aggregatedTimeOff ); }
 #define EU868_CHANNEL_ADD( )                       EU868_CASE { return RegionEU868ChannelAdd( channelAdd ); }
 #define EU868_CHANNEL_REMOVE( )                    EU868_CASE { return RegionEU868ChannelsRemove( channelRemove ); }
 #define EU868_SET_CONTINUOUS_WAVE( )               EU868_CASE { RegionEU868SetContinuousWave( continuousWave ); break; }
 #define EU868_APPLY_DR_OFFSET( )                   EU868_CASE { return RegionEU868ApplyDrOffset( downlinkDwellTime, dr, drOffset ); }
-#define EU868_RX_BEACON_SETUP( )                   EU868_CASE { RegionEU868RxBeaconSetup( rxBeaconSetup, outDr ); }
+#define EU868_RX_BEACON_SETUP( )                   EU868_CASE { RegionEU868RxBeaconSetup( rxBeaconSetup, outDr ); break; }
 #else
 #define EU868_IS_ACTIVE( )
 #define EU868_GET_PHY_PARAM( )
@@ -374,14 +374,14 @@
 #define KR920_NEW_CHANNEL_REQ( )                   KR920_CASE { return RegionKR920NewChannelReq( newChannelReq ); }
 #define KR920_TX_PARAM_SETUP_REQ( )                KR920_CASE { return RegionKR920TxParamSetupReq( txParamSetupReq ); }
 #define KR920_DL_CHANNEL_REQ( )                    KR920_CASE { return RegionKR920DlChannelReq( dlChannelReq ); }
-#define KR920_ALTERNATE_DR( )                      KR920_CASE { return RegionKR920AlternateDr( currentDr ); }
+#define KR920_ALTERNATE_DR( )                      KR920_CASE { return RegionKR920AlternateDr( currentDr, type ); }
 #define KR920_CALC_BACKOFF( )                      KR920_CASE { RegionKR920CalcBackOff( calcBackOff ); break; }
 #define KR920_NEXT_CHANNEL( )                      KR920_CASE { return RegionKR920NextChannel( nextChanParams, channel, time, aggregatedTimeOff ); }
 #define KR920_CHANNEL_ADD( )                       KR920_CASE { return RegionKR920ChannelAdd( channelAdd ); }
 #define KR920_CHANNEL_REMOVE( )                    KR920_CASE { return RegionKR920ChannelsRemove( channelRemove ); }
 #define KR920_SET_CONTINUOUS_WAVE( )               KR920_CASE { RegionKR920SetContinuousWave( continuousWave ); break; }
 #define KR920_APPLY_DR_OFFSET( )                   KR920_CASE { return RegionKR920ApplyDrOffset( downlinkDwellTime, dr, drOffset ); }
-#define KR920_RX_BEACON_SETUP( )                   KR920_CASE { RegionKR920RxBeaconSetup( rxBeaconSetup, outDr ); }
+#define KR920_RX_BEACON_SETUP( )                   KR920_CASE { RegionKR920RxBeaconSetup( rxBeaconSetup, outDr ); break; }
 #else
 #define KR920_IS_ACTIVE( )
 #define KR920_GET_PHY_PARAM( )
@@ -428,14 +428,14 @@
 #define IN865_NEW_CHANNEL_REQ( )                   IN865_CASE { return RegionIN865NewChannelReq( newChannelReq ); }
 #define IN865_TX_PARAM_SETUP_REQ( )                IN865_CASE { return RegionIN865TxParamSetupReq( txParamSetupReq ); }
 #define IN865_DL_CHANNEL_REQ( )                    IN865_CASE { return RegionIN865DlChannelReq( dlChannelReq ); }
-#define IN865_ALTERNATE_DR( )                      IN865_CASE { return RegionIN865AlternateDr( currentDr ); }
+#define IN865_ALTERNATE_DR( )                      IN865_CASE { return RegionIN865AlternateDr( currentDr, type ); }
 #define IN865_CALC_BACKOFF( )                      IN865_CASE { RegionIN865CalcBackOff( calcBackOff ); break; }
 #define IN865_NEXT_CHANNEL( )                      IN865_CASE { return RegionIN865NextChannel( nextChanParams, channel, time, aggregatedTimeOff ); }
 #define IN865_CHANNEL_ADD( )                       IN865_CASE { return RegionIN865ChannelAdd( channelAdd ); }
 #define IN865_CHANNEL_REMOVE( )                    IN865_CASE { return RegionIN865ChannelsRemove( channelRemove ); }
 #define IN865_SET_CONTINUOUS_WAVE( )               IN865_CASE { RegionIN865SetContinuousWave( continuousWave ); break; }
 #define IN865_APPLY_DR_OFFSET( )                   IN865_CASE { return RegionIN865ApplyDrOffset( downlinkDwellTime, dr, drOffset ); }
-#define IN865_RX_BEACON_SETUP( )                   IN865_CASE { RegionIN865RxBeaconSetup( rxBeaconSetup, outDr ); }
+#define IN865_RX_BEACON_SETUP( )                   IN865_CASE { RegionIN865RxBeaconSetup( rxBeaconSetup, outDr ); break; }
 #else
 #define IN865_IS_ACTIVE( )
 #define IN865_GET_PHY_PARAM( )
@@ -482,14 +482,14 @@
 #define US915_NEW_CHANNEL_REQ( )                   US915_CASE { return RegionUS915NewChannelReq( newChannelReq ); }
 #define US915_TX_PARAM_SETUP_REQ( )                US915_CASE { return RegionUS915TxParamSetupReq( txParamSetupReq ); }
 #define US915_DL_CHANNEL_REQ( )                    US915_CASE { return RegionUS915DlChannelReq( dlChannelReq ); }
-#define US915_ALTERNATE_DR( )                      US915_CASE { return RegionUS915AlternateDr( currentDr ); }
+#define US915_ALTERNATE_DR( )                      US915_CASE { return RegionUS915AlternateDr( currentDr, type ); }
 #define US915_CALC_BACKOFF( )                      US915_CASE { RegionUS915CalcBackOff( calcBackOff ); break; }
 #define US915_NEXT_CHANNEL( )                      US915_CASE { return RegionUS915NextChannel( nextChanParams, channel, time, aggregatedTimeOff ); }
 #define US915_CHANNEL_ADD( )                       US915_CASE { return RegionUS915ChannelAdd( channelAdd ); }
 #define US915_CHANNEL_REMOVE( )                    US915_CASE { return RegionUS915ChannelsRemove( channelRemove ); }
 #define US915_SET_CONTINUOUS_WAVE( )               US915_CASE { RegionUS915SetContinuousWave( continuousWave ); break; }
 #define US915_APPLY_DR_OFFSET( )                   US915_CASE { return RegionUS915ApplyDrOffset( downlinkDwellTime, dr, drOffset ); }
-#define US915_RX_BEACON_SETUP( )                   US915_CASE { RegionUS915RxBeaconSetup( rxBeaconSetup, outDr ); }
+#define US915_RX_BEACON_SETUP( )                   US915_CASE { RegionUS915RxBeaconSetup( rxBeaconSetup, outDr ); break; }
 #else
 #define US915_IS_ACTIVE( )
 #define US915_GET_PHY_PARAM( )
@@ -536,14 +536,14 @@
 #define RU864_NEW_CHANNEL_REQ( )                   RU864_CASE { return RegionRU864NewChannelReq( newChannelReq ); }
 #define RU864_TX_PARAM_SETUP_REQ( )                RU864_CASE { return RegionRU864TxParamSetupReq( txParamSetupReq ); }
 #define RU864_DL_CHANNEL_REQ( )                    RU864_CASE { return RegionRU864DlChannelReq( dlChannelReq ); }
-#define RU864_ALTERNATE_DR( )                      RU864_CASE { return RegionRU864AlternateDr( currentDr ); }
+#define RU864_ALTERNATE_DR( )                      RU864_CASE { return RegionRU864AlternateDr( currentDr, type ); }
 #define RU864_CALC_BACKOFF( )                      RU864_CASE { RegionRU864CalcBackOff( calcBackOff ); break; }
 #define RU864_NEXT_CHANNEL( )                      RU864_CASE { return RegionRU864NextChannel( nextChanParams, channel, time, aggregatedTimeOff ); }
 #define RU864_CHANNEL_ADD( )                       RU864_CASE { return RegionRU864ChannelAdd( channelAdd ); }
 #define RU864_CHANNEL_REMOVE( )                    RU864_CASE { return RegionRU864ChannelsRemove( channelRemove ); }
 #define RU864_SET_CONTINUOUS_WAVE( )               RU864_CASE { RegionRU864SetContinuousWave( continuousWave ); break; }
 #define RU864_APPLY_DR_OFFSET( )                   RU864_CASE { return RegionRU864ApplyDrOffset( downlinkDwellTime, dr, drOffset ); }
-#define RU864_RX_BEACON_SETUP( )                   RU864_CASE { RegionRU864RxBeaconSetup( rxBeaconSetup, outDr ); }
+#define RU864_RX_BEACON_SETUP( )                   RU864_CASE { RegionRU864RxBeaconSetup( rxBeaconSetup, outDr ); break; }
 #else
 #define RU864_IS_ACTIVE( )
 #define RU864_GET_PHY_PARAM( )
@@ -908,7 +908,7 @@ uint8_t RegionDlChannelReq( LoRaMacRegion_t region, DlChannelReqParams_t* dlChan
     }
 }
 
-int8_t RegionAlternateDr( LoRaMacRegion_t region, int8_t currentDr )
+int8_t RegionAlternateDr( LoRaMacRegion_t region, int8_t currentDr, AlternateDrType_t type )
 {
     switch( region )
     {

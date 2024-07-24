@@ -87,8 +87,11 @@
 /*!
  * Minimal Tx output power that can be used by the node
  */
+#if (defined(CERTIF_LORAWAN_VERSION) &&(CERTIF_LORAWAN_VERSION == 102))
 #define US915_MIN_TX_POWER                          TX_POWER_10
-
+#else
+#define US915_MIN_TX_POWER                          TX_POWER_14
+#endif
 /*!
  * Maximal Tx output power that can be used by the node
  */
@@ -426,9 +429,11 @@ uint8_t RegionUS915DlChannelReq( DlChannelReqParams_t* dlChannelReq );
  *
  * \param [IN] currentDr Current datarate.
  *
+ * \param [IN] type Alternation type.
+ *
  * \retval Datarate to apply.
  */
-int8_t RegionUS915AlternateDr( int8_t currentDr );
+int8_t RegionUS915AlternateDr( int8_t currentDr, AlternateDrType_t type );
 
 /*!
  * \brief Calculates the back-off time.

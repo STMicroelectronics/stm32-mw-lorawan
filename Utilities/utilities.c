@@ -12,9 +12,17 @@ License: Revised BSD License, see LICENSE.TXT file include in the project
 
 Maintainer: Miguel Luis and Gregory Cristian
 */
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
+/**
+  ******************************************************************************
+  *
+  *          Portions COPYRIGHT 2020 STMicroelectronics
+  *
+  * @file    utilities.c
+  * @author  MCD Application Team
+  * @brief   Helper functions implementation
+  ******************************************************************************
+ */
+
 #include "utilities.h"
 
 /*!
@@ -83,3 +91,4 @@ int8_t Nibble2HexChar( uint8_t a )
         return '?';
     }
 }
+/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

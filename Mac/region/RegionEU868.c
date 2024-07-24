@@ -32,7 +32,8 @@
 
 #include "RegionCommon.h"
 #include "RegionEU868.h"
-#include "util_console.h"
+#include "lorawan_conf.h"
+#include "mw_log_conf.h"
 
 // Definitions
 #define CHANNELS_MASK_SIZE              1
@@ -105,7 +106,7 @@ static int8_t LimitTxPower( int8_t txPower, int8_t maxBandTxPower, int8_t datara
     return txPowerResult;
 }
 
-static bool VerifyTxFreq( uint32_t freq, uint8_t *band )
+static bool VerifyRfFreq( uint32_t freq, uint8_t *band )
 {
     // Check radio driver support
     if( Radio.CheckRfFrequency( freq ) == false )
@@ -128,7 +129,7 @@ static bool VerifyTxFreq( uint32_t freq, uint8_t *band )
     }
     else if( ( freq >= 868700000 ) && ( freq <= 869200000 ) )
     {
-        *band = 2;
+        *band = 5;
     }
     else if( ( freq >= 869400000 ) && ( freq <= 869650000 ) )
     {
@@ -378,6 +379,7 @@ void RegionEU868InitDefaults( InitDefaultsParams_t* params )
         EU868_BAND2,
         EU868_BAND3,
         EU868_BAND4,
+        EU868_BAND5,
     };
 
     switch( params->Type )
@@ -410,12 +412,11 @@ void RegionEU868InitDefaults( InitDefaultsParams_t* params )
         {
             // Restore channels default mask
             NvmCtx.ChannelsMask[0] |= NvmCtx.ChannelsDefaultMask[0];
-            break;
-        }
-        case INIT_TYPE_APP_DEFAULTS:
-        {
-            // Update the channels mask defaults
-            RegionCommonChanMaskCopy( NvmCtx.ChannelsMask, NvmCtx.ChannelsDefaultMask, 1 );
+
+            // Channels
+            NvmCtx.Channels[0] = ( ChannelParams_t ) EU868_LC1;
+            NvmCtx.Channels[1] = ( ChannelParams_t ) EU868_LC2;
+            NvmCtx.Channels[2] = ( ChannelParams_t ) EU868_LC3;
             break;
         }
         default:
@@ -435,6 +436,11 @@ bool RegionEU868Verify( VerifyParams_t* verify, PhyAttribute_t phyAttribute )
 {
     switch( phyAttribute )
     {
+        case PHY_FREQUENCY:
+        {
+            uint8_t band = 0;
+            return VerifyRfFreq( verify->Frequency, &band );
+        }
         case PHY_TX_DR:
         {
             return RegionCommonValueInRange( verify->DatarateParams.Datarate, EU868_TX_MIN_DATARATE, EU868_TX_MAX_DATARATE );
@@ -568,6 +574,7 @@ bool RegionEU868RxConfig( RxConfigParams_t* rxConfig, int8_t* datarate )
     uint8_t maxPayload = 0;
     int8_t phyDr = 0;
     uint32_t frequency = rxConfig->Frequency;
+    const char *slotStrings[] = { "1", "2", "C", "Multi_C", "P", "Multi_P" };
 
     if( Radio.GetStatus( ) != RF_IDLE )
     {
@@ -612,7 +619,14 @@ bool RegionEU868RxConfig( RxConfigParams_t* rxConfig, int8_t* datarate )
     }
 
     Radio.SetMaxPayloadLength( modem, maxPayload + LORA_MAC_FRMPAYLOAD_OVERHEAD );
-    TVL1( PRINTF( "RX on freq %d Hz at DR %d\n\r", frequency, dr );)
+    if ( rxConfig->RxSlot < RX_SLOT_NONE )
+    {
+        MW_LOG(TS_ON, VLEVEL_M,  "RX_%s on freq %d Hz at DR %d\r\n", slotStrings[rxConfig->RxSlot], frequency, dr );
+    }
+    else
+    {
+        MW_LOG(TS_ON, VLEVEL_M,  "RX on freq %d Hz at DR %d\r\n", frequency, dr );
+    }
 
     *datarate = (uint8_t) dr;
     return true;
@@ -635,14 +649,14 @@ bool RegionEU868TxConfig( TxConfigParams_t* txConfig, int8_t* txPower, TimerTime
     if( txConfig->Datarate == DR_7 )
     { // High Speed FSK channel
         modem = MODEM_FSK;
-        Radio.SetTxConfig( modem, phyTxPower, 25000, bandwidth, phyDr * 1000, 0, 5, false, true, 0, 0, false, 3000 );
+        Radio.SetTxConfig( modem, phyTxPower, 25000, bandwidth, phyDr * 1000, 0, 5, false, true, 0, 0, false, 4000 );
     }
     else
     {
         modem = MODEM_LORA;
-        Radio.SetTxConfig( modem, phyTxPower, 0, bandwidth, phyDr, 1, 8, false, true, 0, 0, false, 3000 );
+        Radio.SetTxConfig( modem, phyTxPower, 0, bandwidth, phyDr, 1, 8, false, true, 0, 0, false, 4000 );
     }
-    TVL1( PRINTF( "TX on freq %d Hz at DR %d\n\r", NvmCtx.Channels[txConfig->Channel].Frequency, txConfig->Datarate );)
+    MW_LOG(TS_ON, VLEVEL_M,  "TX on freq %d Hz at DR %d\r\n", NvmCtx.Channels[txConfig->Channel].Frequency, txConfig->Datarate );
 
     // Setup maximum payload lenght of the radio driver
     Radio.SetMaxPayloadLength( modem, txConfig->PktLen );
@@ -761,9 +775,10 @@ uint8_t RegionEU868LinkAdrReq( LinkAdrReqParams_t* linkAdrReq, int8_t* drOut, in
 uint8_t RegionEU868RxParamSetupReq( RxParamSetupReqParams_t* rxParamSetupReq )
 {
     uint8_t status = 0x07;
+    uint8_t band = 0;
 
     // Verify radio frequency
-    if( Radio.CheckRfFrequency( rxParamSetupReq->Frequency ) == false )
+    if( VerifyRfFreq( rxParamSetupReq->Frequency, &band ) == false )
     {
         status &= 0xFE; // Channel frequency KO
     }
@@ -847,7 +862,7 @@ uint8_t RegionEU868DlChannelReq( DlChannelReqParams_t* dlChannelReq )
     uint8_t band = 0;
 
     // Verify if the frequency is supported
-    if( VerifyTxFreq( dlChannelReq->Rx1Frequency, &band ) == false )
+    if( VerifyRfFreq( dlChannelReq->Rx1Frequency, &band ) == false )
     {
         status &= 0xFE;
     }
@@ -867,7 +882,7 @@ uint8_t RegionEU868DlChannelReq( DlChannelReqParams_t* dlChannelReq )
     return status;
 }
 
-int8_t RegionEU868AlternateDr( int8_t currentDr )
+int8_t RegionEU868AlternateDr( int8_t currentDr, AlternateDrType_t type )
 {
     return currentDr;
 }
@@ -900,7 +915,8 @@ LoRaMacStatus_t RegionEU868NextChannel( NextChanParams_t* nextChanParams, uint8_
         NvmCtx.ChannelsMask[0] |= LC( 1 ) + LC( 2 ) + LC( 3 );
     }
 
-    if( nextChanParams->AggrTimeOff <= TimerGetElapsedTime( nextChanParams->LastAggrTx ) )
+    TimerTime_t elapsed = TimerGetElapsedTime( nextChanParams->LastAggrTx );
+    if( ( nextChanParams->LastAggrTx == 0 ) || ( nextChanParams->AggrTimeOff <= elapsed ) )
     {
         // Reset Aggregated time off
         *aggregatedTimeOff = 0;
@@ -916,7 +932,7 @@ LoRaMacStatus_t RegionEU868NextChannel( NextChanParams_t* nextChanParams, uint8_
     else
     {
         delayTx++;
-        nextTxDelay = nextChanParams->AggrTimeOff - TimerGetElapsedTime( nextChanParams->LastAggrTx );
+        nextTxDelay = nextChanParams->AggrTimeOff - elapsed;
     }
 
     if( nbEnabledChannels > 0 )
@@ -949,6 +965,11 @@ LoRaMacStatus_t RegionEU868ChannelAdd( ChannelAddParams_t* channelAdd )
     bool freqInvalid = false;
     uint8_t id = channelAdd->ChannelId;
 
+    if( id < EU868_NUMB_DEFAULT_CHANNELS )
+    {
+        return LORAMAC_STATUS_FREQ_AND_DR_INVALID;
+    }
+
     if( id >= EU868_MAX_NB_CHANNELS )
     {
         return LORAMAC_STATUS_PARAMETER_INVALID;
@@ -968,30 +989,10 @@ LoRaMacStatus_t RegionEU868ChannelAdd( ChannelAddParams_t* channelAdd )
         drInvalid = true;
     }
 
-    // Default channels don't accept all values
-    if( id < EU868_NUMB_DEFAULT_CHANNELS )
-    {
-        // Validate the datarate range for min: must be DR_0
-        if( channelAdd->NewChannel->DrRange.Fields.Min > DR_0 )
-        {
-            drInvalid = true;
-        }
-        // Validate the datarate range for max: must be DR_5 <= Max <= TX_MAX_DATARATE
-        if( RegionCommonValueInRange( channelAdd->NewChannel->DrRange.Fields.Max, DR_5, EU868_TX_MAX_DATARATE ) == false )
-        {
-            drInvalid = true;
-        }
-        // We are not allowed to change the frequency
-        if( channelAdd->NewChannel->Frequency != NvmCtx.Channels[id].Frequency )
-        {
-            freqInvalid = true;
-        }
-    }
-
     // Check frequency
     if( freqInvalid == false )
     {
-        if( VerifyTxFreq( channelAdd->NewChannel->Frequency, &band ) == false )
+        if( VerifyRfFreq( channelAdd->NewChannel->Frequency, &band ) == false )
         {
             freqInvalid = true;
         }

@@ -44,6 +44,11 @@
 #include "LoRaMacTypes.h"
 #include "LoRaMacMessageTypes.h"
 
+/*
+ * Initial value of the frame counters
+ */
+#define FCNT_DOWN_INITAL_VALUE          0xFFFFFFFF
+
 /*!
  * LoRaMac Cryto Status
  */
@@ -70,9 +75,21 @@ typedef enum eLoRaMacCryptoStatus
      */
     LORAMAC_CRYPTO_FAIL_RJCOUNT0_OVERFLOW,
     /*!
-     * FCntUp/Down check failed
+     * FCNT_ID is not supported
      */
-    LORAMAC_CRYPTO_FAIL_FCNT,
+    LORAMAC_CRYPTO_FAIL_FCNT_ID,
+    /*!
+     * FCntUp/Down check failed (new FCnt is smaller than previous one)
+     */
+    LORAMAC_CRYPTO_FAIL_FCNT_SMALLER,
+    /*!
+     * FCntUp/Down check failed (duplicated)
+     */
+    LORAMAC_CRYPTO_FAIL_FCNT_DUPLICATED,
+    /*!
+     * MAX_GAP_FCNT check failed
+     */
+    LORAMAC_CRYPTO_FAIL_MAX_GAP_FCNT,
     /*!
      * Not allowed parameter value
      */
@@ -125,7 +142,7 @@ typedef enum eLoRaMacCryptoStatus
  * crypto module context.
  *
  */
-//typedef void ( *EventNvmCtxChanged )( void );
+typedef void ( *LoRaMacCryptoNvmEvent )( void );
 
 /*!
  * Initialization of LoRaMac Crypto module
@@ -135,7 +152,7 @@ typedef enum eLoRaMacCryptoStatus
  *                                      non-volatile context have to be stored.
  * \retval                            - Status of the operation
  */
-LoRaMacCryptoStatus_t LoRaMacCryptoInit( EventNvmCtxChanged cryptoNvmCtxChanged );
+LoRaMacCryptoStatus_t LoRaMacCryptoInit( LoRaMacCryptoNvmEvent cryptoNvmCtxChanged );
 
 /*!
  * Sets the LoRaWAN specification version to be used.
@@ -163,6 +180,34 @@ LoRaMacCryptoStatus_t LoRaMacCryptoRestoreNvmCtx( void* cryptoNvmCtx );
  * \retval                         - Points to a structure where the module store its non-volatile context
  */
 void* LoRaMacCryptoGetNvmCtx( size_t* cryptoNvmCtxSize );
+
+/*!
+ * Returns updated fCntID downlink counter value.
+ *
+ * \param[IN]     fCntID         - Frame counter identifier
+ * \param[IN]     maxFcntGap     - Maximum allowed frame counter difference (only necessary for L2 LW1.0.x)
+ * \param[IN]     frameFcnt      - Received frame counter (used to update current counter value)
+ * \param[OUT]    currentDown    - Current downlink counter value
+ * \retval                       - Status of the operation
+ */
+LoRaMacCryptoStatus_t LoRaMacCryptoGetFCntDown( FCntIdentifier_t fCntID, uint16_t maxFCntGap, uint32_t frameFcnt, uint32_t* currentDown );
+
+/*!
+ * Returns updated fCntUp uplink counter value.
+ *
+ * \param[IN]     currentUp      - Uplink counter value
+ * \retval                       - Status of the operation
+ */
+LoRaMacCryptoStatus_t LoRaMacCryptoGetFCntUp( uint32_t* currentUp );
+
+/*!
+ * Provides multicast context.
+ *
+ * \param[IN]     multicastList - Pointer to the multicast context list
+ *
+ * \retval                      - Status of the operation
+ */
+LoRaMacCryptoStatus_t LoRaMacCryptoSetMulticastReference( MulticastCtx_t* multicastList );
 
 /*!
  * Sets a key
@@ -235,16 +280,28 @@ LoRaMacCryptoStatus_t LoRaMacCryptoSecureMessage( uint32_t fCntUp, uint8_t txDr,
 LoRaMacCryptoStatus_t LoRaMacCryptoUnsecureMessage( AddressIdentifier_t addrID, uint32_t address, FCntIdentifier_t fCntID, uint32_t fCntDown, LoRaMacMessageData_t* macMsg );
 
 /*!
- * Derives the McKEKey from the AppKey or NwkKey.
+ * Derives the McRootKey from the GenAppKey or AppKey.
  *
- * McKEKey = aes128_encrypt(NwkKey or AppKey , nonce | DevEUI  | pad16)
+ * 1.0.x
+ * McRootKey = aes128_encrypt(GenAppKey , 0x00 | pad16)
  *
- * \param[IN]     keyID           - Key identifier of the root key to use to perform the derivation ( NwkKey or AppKey )
- * \param[IN]     nonce           - Nonce value ( nonce <= 15)
- * \param[IN]     devEUI          - DevEUI Value
+ * 1.1.x
+ * McRootKey = aes128_encrypt(AppKey , 0x20 | pad16)
+ *
+ * \param[IN]     keyID           - Key identifier of the root key to use to perform the derivation ( GenAppKey or AppKey )
  * \retval                        - Status of the operation
  */
-LoRaMacCryptoStatus_t LoRaMacCryptoDeriveMcKEKey( KeyIdentifier_t keyID, uint16_t nonce, uint8_t* devEUI );
+LoRaMacCryptoStatus_t LoRaMacCryptoDeriveMcRootKey( KeyIdentifier_t keyID );
+
+/*!
+ * Derives the McKEKey from the McRootKey.
+ *
+ * McKEKey = aes128_encrypt(McRootKey , 0x00  | pad16)
+ *
+ * \param[IN]     keyID           - Key identifier of the root key to use to perform the derivation ( McRootKey )
+ * \retval                        - Status of the operation
+ */
+LoRaMacCryptoStatus_t LoRaMacCryptoDeriveMcKEKey( KeyIdentifier_t keyID );
 
 /*!
  * Derives a Multicast group key pair ( McAppSKey, McNwkSKey ) from McKey

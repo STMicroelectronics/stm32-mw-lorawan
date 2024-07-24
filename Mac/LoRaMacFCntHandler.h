@@ -74,7 +74,7 @@ typedef enum eLoRaMacFCntHandlerStatus
  * Signature of callback function to be called by this module when the
  * non-volatile needs to be saved.
  */
-//typedef void ( *EventNvmCtxChanged )( void );
+typedef void ( *EventNvmCtxChanged )( void );
 
 /*!
  * \brief Initialization of LoRaMac FCnt Handler module
