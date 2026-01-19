@@ -724,7 +724,7 @@ LoRaMacStatus_t RegionCommonIdentifyChannels( RegionCommonIdentifyChannelsParam_
                                                       identifyChannelsParam->MaxBands,
                                                       identifyChannelsParam->DutyCycleEnabled,
                                                       identifyChannelsParam->LastTxIsJoinRequest,
-                                                      identifyChannelsParam->ElapsedTimeSinceStartUp,
+                                                      identifyChannelsParam->ElapsedTimeSinceTxBackoffRefTime,
                                                       identifyChannelsParam->ExpectedTimeOnAir );
 
         RegionCommonCountNbOfEnabledChannels( identifyChannelsParam->CountNbOfEnabledChannelsParam, enabledChannels,

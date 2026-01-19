@@ -244,6 +244,9 @@ static void LmhpFirmwareManagementOnMcpsIndication( McpsIndication_t *mcpsIndica
                     {
                         SysTime_t curTime = { .Seconds = 0, .SubSeconds = 0 };
                         curTime = SysTimeGet();
+                        
+                        /* rebootTimeReq is based on GPS epoch, convert to Unix epoch*/
+                        rebootTimeReq += UNIX_GPS_EPOCH_OFFSET;
 
                         rebootTimeAns = rebootTimeReq - curTime.Seconds;
                         if( rebootTimeAns > 0 )

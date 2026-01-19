@@ -40,6 +40,7 @@
   */
 #include "radio.h"
 #include "RegionAS923.h"
+#include "LmHandler.h"
 
 // Definitions
 #define CHANNELS_MASK_SIZE                1
@@ -166,9 +167,6 @@
 #undef AS923_RX_MAX_DATARATE
 #define AS923_RX_MAX_DATARATE             DR_5
 
-#undef AS923_DEFAULT_MAX_EIRP
-#define AS923_DEFAULT_MAX_EIRP            13.0f
-
 /*!
  * STD-T108 Ver1.4 does not require dwell-time enforcement when using LBT on channels 28 to 38
  */
@@ -199,9 +197,6 @@
 #undef AS923_RX_MAX_DATARATE
 #define AS923_RX_MAX_DATARATE             DR_5
 
-#undef AS923_DEFAULT_MAX_EIRP
-#define AS923_DEFAULT_MAX_EIRP            13.0f
-
 /*!
  * STD-T108 Ver1.4 does not require dwell-time enforcement when using DC on channels 28 to 38
  */
@@ -214,19 +209,19 @@
 #undef AS923_DUTY_CYCLE_ENABLED
 #define AS923_DUTY_CYCLE_ENABLED          1
 
-#elif ( REGION_AS923_DEFAULT_CHANNEL_PLAN == CHANNEL_PLAN_GROUP_AS923_1_JP_CH37_CH61_LBT_DC )
+#elif ( REGION_AS923_DEFAULT_CHANNEL_PLAN == CHANNEL_PLAN_GROUP_AS923_1_JP_CH33_CH61_LBT_DC )
 
 /*
- * STD-T108 Ver1.4 allows the use of channels 37 to 61 with LBT and DC.
+ * STD-T108 Ver1.4 allows the use of channels 33 to 61 with LBT and DC.
  * However dwell time enforcement must be enabled
  */
 
-// Channel plan CHANNEL_PLAN_GROUP_AS923_1_JP_CH37_CH61_LBT_DC
+// Channel plan CHANNEL_PLAN_GROUP_AS923_1_JP_CH33_CH61_LBT_DC
 
 #define REGION_AS923_FREQ_OFFSET          0
 
 /*!
- * Restrict AS923 frequencies to channels 37 to 61
+ * Restrict AS923 frequencies to channels 33 to 61
  * Center frequencies 922.4 MHz to 928.0 MHz @ 200 kHz max bandwidth
  */
 #define AS923_MIN_RF_FREQUENCY            922400000
@@ -238,9 +233,6 @@
 #undef AS923_RX_MAX_DATARATE
 #define AS923_RX_MAX_DATARATE             DR_5
 
-#undef AS923_DEFAULT_MAX_EIRP
-#define AS923_DEFAULT_MAX_EIRP            13.0f
-
 /*!
  * Enable duty cycle enforcement
  */
@@ -248,7 +240,7 @@
 #define AS923_DUTY_CYCLE_ENABLED          1
 
 /*!
- * STD-T108 Ver1.4 requires a carrier sense time of at least 128 us on channels 37 to 61
+ * STD-T108 Ver1.4 requires a carrier sense time of at least 128 us on channels 33 to 61
  */
 #undef AS923_CARRIER_SENSE_TIME
 #define AS923_CARRIER_SENSE_TIME          1
@@ -559,10 +551,10 @@ void RegionAS923SetBandTxDone( SetBandTxDoneParams_t* txDone )
 #if defined( REGION_AS923 )
 #if (defined( REGION_VERSION ) && ( REGION_VERSION == 0x01010003 ))
     RegionCommonSetBandTxDone( &RegionNvmGroup1->Bands[RegionNvmGroup2->Channels[txDone->Channel].Band],
-                               txDone->LastTxAirTime, txDone->Joined, txDone->ElapsedTimeSinceStartUp );
+                               txDone->LastTxAirTime, txDone->Joined, txDone->ElapsedTimeSinceTxBackoffRefTime );
 #elif (defined( REGION_VERSION ) && (( REGION_VERSION == 0x02010001 ) || ( REGION_VERSION == 0x02010003 )))
     RegionCommonSetBandTxDone( &RegionBands[RegionNvmGroup2->Channels[txDone->Channel].Band],
-                               txDone->LastTxAirTime, txDone->Joined, txDone->ElapsedTimeSinceStartUp );
+                               txDone->LastTxAirTime, txDone->Joined, txDone->ElapsedTimeSinceTxBackoffRefTime );
 #endif /* REGION_VERSION */
 #endif /* REGION_AS923 */
 }
@@ -614,7 +606,7 @@ void RegionAS923InitDefaults( InitDefaultsParams_t* params )
 
 #if ( ( REGION_AS923_DEFAULT_CHANNEL_PLAN == CHANNEL_PLAN_GROUP_AS923_1_JP ) || \
 	( REGION_AS923_DEFAULT_CHANNEL_PLAN == CHANNEL_PLAN_GROUP_AS923_1_JP_CH24_CH38_LBT ) || \
-      ( REGION_AS923_DEFAULT_CHANNEL_PLAN == CHANNEL_PLAN_GROUP_AS923_1_JP_CH37_CH61_LBT_DC ) )
+      ( REGION_AS923_DEFAULT_CHANNEL_PLAN == CHANNEL_PLAN_GROUP_AS923_1_JP_CH33_CH61_LBT_DC ) )
             RegionNvmGroup2->RssiFreeThreshold = AS923_RSSI_FREE_TH;
             RegionNvmGroup2->CarrierSenseTime = AS923_CARRIER_SENSE_TIME;
 #endif
@@ -1020,7 +1012,8 @@ uint8_t RegionAS923RxParamSetupReq( RxParamSetupReqParams_t* rxParamSetupReq )
 {
     uint8_t status = 0x07;
 #if defined( REGION_AS923 )
-
+    int8_t datarate;
+    LmHandlerGetTxDatarate( &datarate );
     // Verify radio frequency
     if( VerifyRfFreq( rxParamSetupReq->Frequency ) == false )
     {
@@ -1034,7 +1027,7 @@ uint8_t RegionAS923RxParamSetupReq( RxParamSetupReqParams_t* rxParamSetupReq )
     }
 
     // Verify datarate offset
-    if( RegionCommonValueInRange( rxParamSetupReq->DrOffset, AS923_MIN_RX1_DR_OFFSET, AS923_MAX_RX1_DR_OFFSET ) == false )
+    if( RegionCommonValueInRange( rxParamSetupReq->DrOffset, AS923_MIN_RX1_DR_OFFSET, AS923_MAX_RX1_DR_OFFSET ) && (EffectiveRx1DrOffsetDownlinkDwell0AS923[datarate][rxParamSetupReq->DrOffset]<=AS923_RX_MAX_DATARATE) == false )
     {
         status &= 0xFB; // Rx1DrOffset range KO
     }
@@ -1178,7 +1171,7 @@ LoRaMacStatus_t RegionAS923NextChannel( NextChanParams_t* nextChanParams, uint8_
     identifyChannelsParam.DutyCycleEnabled = nextChanParams->DutyCycleEnabled;
     identifyChannelsParam.MaxBands = AS923_MAX_NB_BANDS;
 
-    identifyChannelsParam.ElapsedTimeSinceStartUp = nextChanParams->ElapsedTimeSinceStartUp;
+    identifyChannelsParam.ElapsedTimeSinceTxBackoffRefTime = nextChanParams->ElapsedTimeSinceTxBackoffRefTime;
     identifyChannelsParam.LastTxIsJoinRequest = nextChanParams->LastTxIsJoinRequest;
     identifyChannelsParam.ExpectedTimeOnAir = GetTimeOnAir( nextChanParams->Datarate, nextChanParams->PktLen );
 
@@ -1191,7 +1184,7 @@ LoRaMacStatus_t RegionAS923NextChannel( NextChanParams_t* nextChanParams, uint8_
     {
 #if (( REGION_AS923_DEFAULT_CHANNEL_PLAN == CHANNEL_PLAN_GROUP_AS923_1_JP ) || \
 	( REGION_AS923_DEFAULT_CHANNEL_PLAN == CHANNEL_PLAN_GROUP_AS923_1_JP_CH24_CH38_LBT ) || \
-      ( REGION_AS923_DEFAULT_CHANNEL_PLAN == CHANNEL_PLAN_GROUP_AS923_1_JP_CH37_CH61_LBT_DC ) )
+      ( REGION_AS923_DEFAULT_CHANNEL_PLAN == CHANNEL_PLAN_GROUP_AS923_1_JP_CH33_CH61_LBT_DC ) )
         // Executes the LBT algorithm when operating in Japan
         uint8_t channelNext = 0;
 
